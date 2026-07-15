@@ -1,0 +1,19 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      # Same-origin via the nginx proxy, so no cross-origin caller exists.
+      CORS_ORIGIN: ""
+    healthcheck:
+      # Distroless has no shell/curl; compose can't probe it directly.
+      # The Go server exposes GET /healthz for external monitors instead.
+      disable: true
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
