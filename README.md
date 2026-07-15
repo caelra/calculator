@@ -33,11 +33,57 @@ Open http://localhost:5173.
 
 ## Running with Docker
 
+Requires Docker with the Compose plugin (Docker Desktop, OrbStack, or `docker` + `docker-compose-plugin`). From the repository root:
+
 ```sh
 docker compose up --build
 ```
 
-Open http://localhost:3000. nginx serves the built frontend and proxies `/api` to the backend container.
+Then open **http://localhost:3000**.
+
+`--build` rebuilds the images after code changes; drop it to reuse cached images. To run detached and view logs:
+
+```sh
+docker compose up --build -d      # start in the background
+docker compose logs -f            # follow logs (Ctrl-C to stop following)
+docker compose ps                 # show container status
+docker compose down               # stop and remove the containers
+```
+
+### How the stack fits together
+
+Two services defined in [`docker-compose.yml`](docker-compose.yml):
+
+| Service | Image | Port | Role |
+|---|---|---|---|
+| `frontend` | multi-stage Node build → `nginx:alpine` | `3000:80` | serves the built SPA and proxies `/api/` to the backend |
+| `backend` | multi-stage Go build → `distroless/static` | internal `8080` only | the calculator API |
+
+Only the frontend publishes a port. The browser talks to `http://localhost:3000`; nginx forwards every `/api/` request to `http://backend:8080` over the internal Compose network ([`frontend/nginx.conf`](frontend/nginx.conf)), so the app is same-origin and needs no CORS. The backend is never exposed to the host.
+
+### Configuration
+
+Override backend env vars in the `backend` service of `docker-compose.yml` (defaults in parentheses): `RATE_LIMIT_RPS` (20), `RATE_LIMIT_BURST` (40), `CORS_ORIGIN` (empty — unused behind the proxy). See [Configuration](#configuration-backend-env-vars).
+
+### Verify it works
+
+```sh
+# UI
+open http://localhost:3000                    # macOS (or just open in a browser)
+
+# API through the nginx proxy
+curl -s -X POST http://localhost:3000/api/v1/calculate \
+  -H 'Content-Type: application/json' \
+  -d '{"operation":"add","a":2,"b":3}'
+# {"result":5}
+
+curl -s -X POST http://localhost:3000/api/v1/calculate \
+  -H 'Content-Type: application/json' \
+  -d '{"operation":"divide","a":10,"b":0}'
+# {"error":{"code":"division_by_zero","message":"cannot divide by zero"}}   (HTTP 422)
+```
+
+> The backend port `8080` is intentionally **not** published to the host — reach the API through the frontend on port 3000, exactly as the browser does.
 
 ## Tests & coverage
 
