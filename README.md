@@ -13,7 +13,7 @@ A calculator web application: **React (TypeScript)** frontend talking to a **Go*
 
 ## Prerequisites
 
-- Go ≥ 1.22 (developed with 1.25)
+- Go ≥ 1.25.5
 - Node.js ≥ 20 (developed with 24)
 - Docker (optional, for the containerized setup)
 
@@ -67,8 +67,11 @@ Current coverage:
 | Layer | Package/scope | Coverage |
 |---|---|---|
 | Backend | `internal/calculator` | 100% statements |
-| Backend | `internal/api` | 95.0% statements |
-| Frontend | `src/` (35 tests) | 95.2% statements / 97.7% lines |
+| Backend | `internal/api` | 95.1% statements |
+| Frontend | `src/` (37 tests) | 95.5% statements / 97.9% lines |
+
+The GitHub Actions workflow runs lint, build, tests, the Go race detector, and
+publishes both coverage reports as downloadable workflow artifacts.
 
 The backend suite also passes under the race detector (`go test -race ./...`), covering concurrent access to the per-IP rate limiter.
 
@@ -160,9 +163,8 @@ Liveness probe, returns `200`. Exempt from rate limiting so monitors are never t
 ### What I'd do with more time
 
 - Expression history panel and a shareable calculation log.
-- Playwright end-to-end test against the composed stack.
-- CI workflow (test + coverage gates + image build).
-- Rate limiting and request IDs in the backend middleware chain.
+- Browser-level end-to-end tests against the composed stack.
+- Request IDs and trusted-proxy-aware client identification for rate limiting.
 
 ## Repository layout
 

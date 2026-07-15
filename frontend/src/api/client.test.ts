@@ -60,6 +60,22 @@ describe('calculate', () => {
     })
   })
 
+  it('throws a generic error when the error envelope has the wrong shape', async () => {
+    mockFetchOnce(500, { message: 'gateway broke' })
+
+    await expect(calculate('add', 1, 2)).rejects.toMatchObject({
+      code: 'unexpected_response',
+    })
+  })
+
+  it('rejects a successful response with an invalid result', async () => {
+    mockFetchOnce(200, { result: 'five' })
+
+    await expect(calculate('add', 2, 3)).rejects.toMatchObject({
+      code: 'unexpected_response',
+    })
+  })
+
   it('throws a network error when fetch rejects', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
 

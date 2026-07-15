@@ -15,6 +15,40 @@ export class CalculatorApiError extends Error {
   }
 }
 
+function isErrorBody(value: unknown): value is ApiErrorBody {
+  if (typeof value !== 'object' || value === null || !('error' in value)) return false
+  const error = value.error
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof error.code === 'string' &&
+    'message' in error &&
+    typeof error.message === 'string'
+  )
+}
+
+function isCalculateResponse(value: unknown): value is CalculateResponse {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'result' in value &&
+    typeof value.result === 'number' &&
+    Number.isFinite(value.result)
+  )
+}
+
+async function readJSON(response: Response): Promise<unknown> {
+  try {
+    return await response.json()
+  } catch {
+    throw new CalculatorApiError(
+      'unexpected_response',
+      `Unexpected response from the calculator service (HTTP ${response.status})`,
+    )
+  }
+}
+
 /** Calls the backend to apply an operation. Unary operations omit b. */
 export async function calculate(
   operation: Operation,
@@ -38,10 +72,8 @@ export async function calculate(
   }
 
   if (!response.ok) {
-    let body: ApiErrorBody
-    try {
-      body = (await response.json()) as ApiErrorBody
-    } catch {
+    const body = await readJSON(response)
+    if (!isErrorBody(body)) {
       throw new CalculatorApiError(
         'unexpected_response',
         `Unexpected response from the calculator service (HTTP ${response.status})`,
@@ -50,6 +82,12 @@ export async function calculate(
     throw new CalculatorApiError(body.error.code, body.error.message)
   }
 
-  const body = (await response.json()) as CalculateResponse
+  const body = await readJSON(response)
+  if (!isCalculateResponse(body)) {
+    throw new CalculatorApiError(
+      'unexpected_response',
+      'The calculator service returned an invalid result',
+    )
+  }
   return body.result
 }

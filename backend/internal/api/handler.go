@@ -4,6 +4,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/sudtho/fullstack-calculator/backend/internal/calculator"
@@ -54,6 +55,12 @@ func handleCalculate(w http.ResponseWriter, r *http.Request) {
 	var req calculateRequest
 	if err := dec.Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "bad_request", "request body must be valid JSON: "+err.Error())
+		return
+	}
+	// A decoder accepts a valid first value even when another JSON value
+	// follows it. Require EOF so each request contains exactly one object.
+	if err := dec.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		writeError(w, http.StatusBadRequest, "bad_request", "request body must contain a single JSON object")
 		return
 	}
 	if req.Operation == "" {

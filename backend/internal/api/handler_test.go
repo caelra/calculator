@@ -88,6 +88,7 @@ func TestCalculateErrors(t *testing.T) {
 	}{
 		{"malformed json", `{"operation":`, http.StatusBadRequest, "bad_request"},
 		{"empty body", ``, http.StatusBadRequest, "bad_request"},
+		{"multiple json values", `{"operation":"add","a":1,"b":2} {}`, http.StatusBadRequest, "bad_request"},
 		{"unknown field", `{"operation":"add","a":1,"b":2,"c":3}`, http.StatusBadRequest, "bad_request"},
 		{"missing operation", `{"a":1,"b":2}`, http.StatusBadRequest, "bad_request"},
 		{"missing operand a", `{"operation":"add","b":2}`, http.StatusBadRequest, "bad_request"},
