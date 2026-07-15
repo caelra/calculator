@@ -10,7 +10,7 @@ import (
 
 func newTestServer(t *testing.T) *httptest.Server {
 	t.Helper()
-	srv := httptest.NewServer(NewHandler("http://localhost:5173"))
+	srv := httptest.NewServer(NewHandler(Config{CORSOrigin: "http://localhost:5173"}))
 	t.Cleanup(srv.Close)
 	return srv
 }

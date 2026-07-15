@@ -12,17 +12,31 @@ import (
 // maxBodyBytes caps request bodies; calculate requests are tiny.
 const maxBodyBytes = 1 << 10
 
-// NewHandler returns the fully wired HTTP handler. corsOrigin is the single
-// origin allowed for cross-origin browser calls (dev server); same-origin
-// deployments (nginx proxy) never send preflights.
-func NewHandler(corsOrigin string) http.Handler {
+// Config wires the HTTP handler.
+type Config struct {
+	// CORSOrigin is the single origin allowed for cross-origin browser
+	// calls (dev server); same-origin deployments (nginx proxy) never
+	// send preflights.
+	CORSOrigin string
+	// RateLimitRPS/RateLimitBurst bound each client IP's request budget.
+	// RateLimitRPS <= 0 disables limiting.
+	RateLimitRPS   float64
+	RateLimitBurst int
+}
+
+// NewHandler returns the fully wired HTTP handler.
+func NewHandler(cfg Config) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/v1/calculate", handleCalculate)
 	mux.HandleFunc("GET /api/v1/operations", handleListOperations)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	return withRecovery(withLogging(withCORS(corsOrigin, mux)))
+	var rl *rateLimiter
+	if cfg.RateLimitRPS > 0 {
+		rl = newRateLimiter(cfg.RateLimitRPS, cfg.RateLimitBurst)
+	}
+	return withRecovery(withLogging(withRateLimit(rl, withCORS(cfg.CORSOrigin, mux))))
 }
 
 type calculateRequest struct {
