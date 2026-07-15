@@ -67,8 +67,10 @@ Current coverage:
 | Layer | Package/scope | Coverage |
 |---|---|---|
 | Backend | `internal/calculator` | 100% statements |
-| Backend | `internal/api` | 97.1% statements |
-| Frontend | `src/` (31 tests) | 94.0% statements / 97.5% lines |
+| Backend | `internal/api` | 95.0% statements |
+| Frontend | `src/` (35 tests) | 95.2% statements / 97.7% lines |
+
+The backend suite also passes under the race detector (`go test -race ./...`), covering concurrent access to the per-IP rate limiter.
 
 (`cmd/server` is process wiring — flags, signals, `ListenAndServe` — and is intentionally not unit-tested.)
 
@@ -99,6 +101,7 @@ Errors — `{ "error": { "code", "message" } }` envelope:
 | 422 | `division_by_zero` | divide with `b = 0` |
 | 422 | `negative_sqrt` | sqrt of a negative number |
 | 422 | `not_finite` | result overflows float64 or is undefined (e.g. `(-1)^0.5`) |
+| 429 | `rate_limited` | client IP exceeded its request budget (see Configuration) |
 
 Examples:
 
@@ -125,7 +128,16 @@ Lists supported operations and their arity — the discovery endpoint a client c
 
 ### `GET /healthz`
 
-Liveness probe, returns `200`.
+Liveness probe, returns `200`. Exempt from rate limiting so monitors are never throttled.
+
+## Configuration (backend env vars)
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `PORT` | `8080` | listen port |
+| `CORS_ORIGIN` | `http://localhost:5173` | origin allowed for cross-origin calls |
+| `RATE_LIMIT_RPS` | `20` | per-IP sustained requests/second (`0` disables) |
+| `RATE_LIMIT_BURST` | `40` | per-IP burst allowance |
 
 ## Design decisions
 
@@ -136,6 +148,8 @@ Liveness probe, returns `200`.
 - **Frontend state machine in a hook.** All calculator behavior lives in a `useReducer`-based `useCalculator` hook; components are thin renderers. The reducer is pure and unit-tested without the DOM.
 - **Same-origin `/api` everywhere.** The Vite dev server and the nginx container both proxy `/api` to the Go backend, so no CORS in either normal path (a CORS middleware still allows the dev origin for direct API access).
 - **422 vs 400.** Requests that are syntactically fine but mathematically invalid (÷0) return `422 Unprocessable Entity` with a machine-readable `code`; malformed requests return `400`.
+- **Request cancellation instead of a scheduler.** Calculations are pure, microsecond-fast CPU work and Go's `net/http` already runs one goroutine per request, so a job queue/scheduler would add latency and failure modes for zero payoff. The async concerns that do matter are handled directly: the frontend client takes an `AbortSignal`, and `useCalculator` cancels the in-flight request whenever a new evaluation starts or `C` is pressed — a stale response can never overwrite newer state.
+- **Per-IP rate limiting.** A `golang.org/x/time/rate` token bucket per client IP (the one non-stdlib backend dependency, maintained by the Go team) protects the backend from abusive concurrency; idle buckets are evicted lazily. Limitation: behind the nginx proxy all clients share the proxy's IP — for real multi-tenant deployments, derive the client key from a trusted `X-Forwarded-For` chain instead.
 
 ### Assumptions
 

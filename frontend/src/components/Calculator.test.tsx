@@ -32,7 +32,7 @@ describe('Calculator', () => {
     await user.click(screen.getByRole('button', { name: '2' }))
     await user.click(screen.getByRole('button', { name: 'equals' }))
 
-    expect(calculateMock).toHaveBeenCalledWith('add', 1, 2)
+    expect(calculateMock).toHaveBeenCalledWith('add', 1, 2, expect.any(AbortSignal))
     expect(screen.getByRole('status')).toHaveTextContent('3')
   })
 
@@ -58,7 +58,7 @@ describe('Calculator', () => {
 
     await user.keyboard('5{+}6{Enter}')
 
-    expect(calculateMock).toHaveBeenCalledWith('add', 5, 6)
+    expect(calculateMock).toHaveBeenCalledWith('add', 5, 6, expect.any(AbortSignal))
     expect(screen.getByRole('status')).toHaveTextContent('11')
   })
 
@@ -70,7 +70,7 @@ describe('Calculator', () => {
     await user.click(screen.getByRole('button', { name: '9' }))
     await user.click(screen.getByRole('button', { name: 'square root' }))
 
-    expect(calculateMock).toHaveBeenCalledWith('sqrt', 9)
+    expect(calculateMock).toHaveBeenCalledWith('sqrt', 9, undefined, expect.any(AbortSignal))
     expect(screen.getByRole('status')).toHaveTextContent('3')
   })
 
@@ -86,28 +86,28 @@ describe('Calculator', () => {
     await user.click(screen.getByRole('button', { name: '0' }))
     await user.click(screen.getByRole('button', { name: '0' }))
     await user.click(screen.getByRole('button', { name: 'equals' }))
-    expect(calculateMock).toHaveBeenLastCalledWith('percentage', 25, 200)
+    expect(calculateMock).toHaveBeenLastCalledWith('percentage', 25, 200, expect.any(AbortSignal))
 
     calculateMock.mockResolvedValue(8)
     await user.click(screen.getByRole('button', { name: '2' }))
     await user.click(screen.getByRole('button', { name: 'power' }))
     await user.click(screen.getByRole('button', { name: '3' }))
     await user.click(screen.getByRole('button', { name: 'equals' }))
-    expect(calculateMock).toHaveBeenLastCalledWith('power', 2, 3)
+    expect(calculateMock).toHaveBeenLastCalledWith('power', 2, 3, expect.any(AbortSignal))
 
     calculateMock.mockResolvedValue(4)
     await user.click(screen.getByRole('button', { name: '6' }))
     await user.click(screen.getByRole('button', { name: 'subtract' }))
     await user.click(screen.getByRole('button', { name: '2' }))
     await user.click(screen.getByRole('button', { name: 'equals' }))
-    expect(calculateMock).toHaveBeenLastCalledWith('subtract', 6, 2)
+    expect(calculateMock).toHaveBeenLastCalledWith('subtract', 6, 2, expect.any(AbortSignal))
 
     calculateMock.mockResolvedValue(12)
     await user.click(screen.getByRole('button', { name: '3' }))
     await user.click(screen.getByRole('button', { name: 'multiply' }))
     await user.click(screen.getByRole('button', { name: '4' }))
     await user.click(screen.getByRole('button', { name: 'equals' }))
-    expect(calculateMock).toHaveBeenLastCalledWith('multiply', 3, 4)
+    expect(calculateMock).toHaveBeenLastCalledWith('multiply', 3, 4, expect.any(AbortSignal))
   })
 
   it('edits the entry with decimal, sign toggle and backspace', async () => {

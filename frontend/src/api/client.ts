@@ -20,6 +20,7 @@ export async function calculate(
   operation: Operation,
   a: number,
   b?: number,
+  signal?: AbortSignal,
 ): Promise<number> {
   let response: Response
   try {
@@ -27,8 +28,12 @@ export async function calculate(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(b === undefined ? { operation, a } : { operation, a, b }),
+      signal,
     })
-  } catch {
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new CalculatorApiError('aborted', 'The request was cancelled')
+    }
     throw new CalculatorApiError('network_error', 'Cannot reach the calculator service')
   }
 

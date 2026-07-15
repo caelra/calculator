@@ -67,4 +67,26 @@ describe('calculate', () => {
       code: 'network_error',
     })
   })
+
+  it('forwards an abort signal to fetch', async () => {
+    const fetchMock = mockFetchOnce(200, { result: 5 })
+    const controller = new AbortController()
+
+    await calculate('add', 2, 3, controller.signal)
+
+    expect(fetchMock.mock.calls[0][1].signal).toBe(controller.signal)
+  })
+
+  it('maps an aborted request to the aborted code, not a network error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new DOMException('The operation was aborted.', 'AbortError')),
+    )
+    const controller = new AbortController()
+    controller.abort()
+
+    await expect(calculate('add', 1, 2, controller.signal)).rejects.toMatchObject({
+      code: 'aborted',
+    })
+  })
 })

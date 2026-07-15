@@ -99,8 +99,67 @@ describe('useCalculator: evaluation', () => {
     act(() => result.current.pressDigit('3'))
     await act(async () => result.current.pressEquals())
 
-    expect(calculateMock).toHaveBeenCalledWith('add', 2, 3)
+    expect(calculateMock).toHaveBeenCalledWith('add', 2, 3, expect.any(AbortSignal))
     expect(result.current.state.display).toBe('5')
+    expect(result.current.state.error).toBeNull()
+  })
+
+  it('clear aborts the in-flight request and keeps the reset state', async () => {
+    let capturedSignal: AbortSignal | undefined
+    calculateMock.mockImplementation(
+      (_op, _a, _b, signal) =>
+        new Promise<number>((_resolve, reject) => {
+          capturedSignal = signal
+          signal?.addEventListener('abort', () =>
+            reject(new CalculatorApiError('aborted', 'The request was cancelled')),
+          )
+        }),
+    )
+    const { result } = renderHook(() => useCalculator())
+
+    act(() => result.current.pressDigit('2'))
+    await act(async () => result.current.pressOperator('add'))
+    act(() => result.current.pressDigit('3'))
+    act(() => {
+      void result.current.pressEquals() // in flight, deliberately not awaited
+    })
+    await act(async () => result.current.clear())
+
+    expect(capturedSignal?.aborted).toBe(true)
+    expect(result.current.state.display).toBe('0')
+    expect(result.current.state.error).toBeNull()
+    expect(result.current.state.loading).toBe(false)
+  })
+
+  it('a new evaluation aborts the previous in-flight request', async () => {
+    const signals: (AbortSignal | undefined)[] = []
+    calculateMock
+      .mockImplementationOnce(
+        (_op, _a, _b, signal) =>
+          new Promise<number>((_resolve, reject) => {
+            signals.push(signal)
+            signal?.addEventListener('abort', () =>
+              reject(new CalculatorApiError('aborted', 'The request was cancelled')),
+            )
+          }),
+      )
+      .mockImplementationOnce((_op, _a, _b, signal) => {
+        signals.push(signal)
+        return Promise.resolve(3)
+      })
+    const { result } = renderHook(() => useCalculator())
+
+    act(() => result.current.pressDigit('9'))
+    await act(async () => result.current.pressOperator('add'))
+    act(() => result.current.pressDigit('9'))
+    act(() => {
+      void result.current.pressEquals() // first request, stays pending
+    })
+    await act(async () => result.current.pressSqrt()) // second request wins
+
+    expect(signals[0]?.aborted).toBe(true)
+    expect(signals[1]?.aborted).toBe(false)
+    expect(result.current.state.display).toBe('3')
     expect(result.current.state.error).toBeNull()
   })
 
@@ -113,13 +172,13 @@ describe('useCalculator: evaluation', () => {
     act(() => result.current.pressDigit('3'))
     await act(async () => result.current.pressOperator('multiply'))
 
-    expect(calculateMock).toHaveBeenCalledWith('add', 2, 3)
+    expect(calculateMock).toHaveBeenCalledWith('add', 2, 3, expect.any(AbortSignal))
     expect(result.current.state.display).toBe('5')
 
     calculateMock.mockResolvedValue(20)
     act(() => result.current.pressDigit('4'))
     await act(async () => result.current.pressEquals())
-    expect(calculateMock).toHaveBeenLastCalledWith('multiply', 5, 4)
+    expect(calculateMock).toHaveBeenLastCalledWith('multiply', 5, 4, expect.any(AbortSignal))
     expect(result.current.state.display).toBe('20')
   })
 
@@ -130,7 +189,7 @@ describe('useCalculator: evaluation', () => {
     act(() => result.current.pressDigit('9'))
     await act(async () => result.current.pressSqrt())
 
-    expect(calculateMock).toHaveBeenCalledWith('sqrt', 9)
+    expect(calculateMock).toHaveBeenCalledWith('sqrt', 9, undefined, expect.any(AbortSignal))
     expect(result.current.state.display).toBe('3')
   })
 
