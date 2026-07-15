@@ -2,14 +2,9 @@
 
 A calculator web application: **React (TypeScript)** frontend talking to a **Go** REST backend. Supports basic arithmetic (add, subtract, multiply, divide) plus exponentiation, square root, and percentage.
 
-```
-┌──────────────────────┐        POST /api/v1/calculate        ┌──────────────────────┐
-│  React + TypeScript  │  ──────────────────────────────────▶ │   Go (net/http)      │
-│  Vite dev server /   │  ◀──────────────────────────────────  │                      │
-│  nginx (Docker)      │        { "result": 2.5 } JSON        │  internal/api        │
-│                      │                                       │  internal/calculator │
-└──────────────────────┘                                       └──────────────────────┘
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="Architecture: React frontend calls the Go backend over POST /api/v1/calculate and receives JSON results" width="760">
+</p>
 
 ## Prerequisites
 
@@ -178,5 +173,5 @@ frontend/
   src/hooks/           useCalculator reducer state machine
   src/components/      Calculator, Display, Keypad
 docker-compose.yml     backend + nginx-served frontend
-PROMPTS.md             AI prompts used to build this
+docs/architecture.svg  architecture diagram (README)
 ```

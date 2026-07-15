@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" role="img" aria-label="Architecture diagram: React frontend calls the Go backend over POST /api/v1/calculate and receives JSON results.">
+  <style>
+    :root {
+      --bg: transparent;
+      --card: #ffffff;
+      --card-stroke: #d0d7de;
+      --text: #1f2328;
+      --muted: #656d76;
+      --accent: #2563eb;
+      --accent-soft: #eff4ff;
+      --wire: #6b7280;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --card: #1b1e25;
+        --card-stroke: #30363d;
+        --text: #e6edf3;
+        --muted: #9aa4af;
+        --accent: #4c8dff;
+        --accent-soft: #17233b;
+        --wire: #8b949e;
+      }
+    }
+    .card { fill: var(--card); stroke: var(--card-stroke); stroke-width: 1.5; }
+    .title { fill: var(--text); font: 600 15px system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .sub   { fill: var(--muted); font: 13px system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .mono  { fill: var(--text); font: 12px ui-monospace, "SF Mono", Menlo, monospace; }
+    .wirelabel { fill: var(--muted); font: 12px ui-monospace, "SF Mono", Menlo, monospace; }
+    .wire  { stroke: var(--wire); stroke-width: 1.75; fill: none; }
+    .chip  { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1; }
+    .chiptext { fill: var(--accent); font: 600 11px ui-monospace, "SF Mono", Menlo, monospace; }
+  </style>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--wire)"/>
+    </marker>
+  </defs>
+
+  <!-- Frontend card -->
+  <rect class="card" x="24" y="60" width="260" height="180" rx="14"/>
+  <text class="title" x="44" y="94">Frontend</text>
+  <text class="sub"   x="44" y="116">React 19 + TypeScript</text>
+  <rect class="chip" x="44" y="132" width="150" height="22" rx="11"/>
+  <text class="chiptext" x="54" y="147">Vite dev / nginx</text>
+  <text class="mono" x="44" y="180">api/client.ts</text>
+  <text class="mono" x="44" y="200">hooks/useCalculator</text>
+  <text class="mono" x="44" y="220">components/</text>
+
+  <!-- Backend card -->
+  <rect class="card" x="476" y="60" width="260" height="180" rx="14"/>
+  <text class="title" x="496" y="94">Backend</text>
+  <text class="sub"   x="496" y="116">Go — net/http (stdlib)</text>
+  <rect class="chip" x="496" y="132" width="196" height="22" rx="11"/>
+  <text class="chiptext" x="506" y="147">middleware chain + limiter</text>
+  <text class="mono" x="496" y="180">internal/api</text>
+  <text class="mono" x="496" y="200">internal/calculator</text>
+  <text class="mono" x="496" y="220">cmd/server</text>
+
+  <!-- Request wire -->
+  <line class="wire" x1="284" y1="128" x2="476" y2="128" marker-end="url(#arrow)"/>
+  <text class="wirelabel" x="380" y="118" text-anchor="middle">POST /api/v1/calculate</text>
+  <text class="wirelabel" x="380" y="146" text-anchor="middle" fill="var(--accent)">{ operation, a, b }</text>
+
+  <!-- Response wire -->
+  <line class="wire" x1="476" y1="182" x2="284" y2="182" marker-end="url(#arrow)"/>
+  <text class="wirelabel" x="380" y="204" text-anchor="middle">{ "result": 2.5 }  ·  JSON</text>
+</svg>
