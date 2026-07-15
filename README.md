@@ -185,6 +185,7 @@ Liveness probe, returns `200`. Exempt from rate limiting so monitors are never t
 
 ## Design decisions
 
+- **HTTP + JSON, RPC-style rather than resource-oriented REST.** A calculation is a stateless operation, not a persisted resource, so modelling it as REST resources (`POST /divisions`, `GET /results/{id}`) would add a synthetic resource model for no benefit. Instead the API keeps the parts of REST that matter here — versioned HTTP endpoints, JSON in/out, meaningful status codes (`400`/`422`/`429`/`200`), a machine-readable error envelope, and a discovery endpoint (`GET /api/v1/operations`) — over a single `POST /api/v1/calculate` verb.
 - **Single `/calculate` endpoint instead of one per operation.** One handler plus an operation registry in the domain package. Adding an operation is one registry entry + tests; no new routes, handlers, or client methods.
 - **Go standard library only.** Go 1.22+ method-pattern routing (`POST /api/v1/calculate`) makes a router dependency unnecessary at this scale. Middleware is plain `func(http.Handler) http.Handler`.
 - **Domain/transport split.** `internal/calculator` is pure logic returning sentinel errors; `internal/api` maps them to HTTP status codes. Each layer is tested independently (table-driven tests vs `httptest`).
